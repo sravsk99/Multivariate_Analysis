@@ -9,7 +9,6 @@ date: "2024-02-11"
 
 1. Ask an important question you want answered (1 at least) : 2 Points
 
-
       1. How does sleep and the quality of sleep one get affect the quality of life of an individual?
 
       2. Can having lower levels of physical activity and a lower step count affect BMI?
@@ -25,17 +24,13 @@ date: "2024-02-11"
     I have taken a dataset from Kaggle :https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset/data 
     
     Dependent variables :
-    Sleep Duration
-    
+    Sleep Duration    
     Quality of Sleep
     
     Independent Variables: 
-    Age
-    
+    Age    
     Gender
-    
-    Occupation
-    
+    Occupation    
     Heart Rate
 
 4. Describe your data (create a data dictionary): 4 Points
