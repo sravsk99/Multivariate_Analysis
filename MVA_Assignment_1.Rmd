@@ -1,0 +1,66 @@
+---
+title: "MVA_HW1"
+author : "Sravya"
+output: html_document
+date: "2024-02-11"
+---
+
+## R Markdown
+
+1. Ask an important question you want answered (1 at least) : 2 Points
+
+
+      1. How does sleep and the quality of sleep one get affect the quality of life of an individual?
+
+      2. Can having lower levels of physical activity and a lower step count affect BMI?
+      
+      3. Do high stress levels relate to lower quality of sleep?
+
+2. Answer why this question(s) is/are important to you: 2 Points
+
+      Sleep takes up 1/3 of a human's life and due to the stressful nature of the modern world, it can be seen to cause a lot of health problems gradually as a person ages. It is very important that we don't forego one of the most important aspects in our life to stay hail and hearty.
+
+3. Find and collect data (need one dependent variable and more than 3 independent variables): 2 Points
+
+    I have taken a dataset from Kaggle :https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset/data 
+    
+    Dependent variables :
+    Sleep Duration
+    
+    Quality of Sleep
+    
+    Independent Variables: 
+    Age
+    
+    Gender
+    
+    Occupation
+    
+    Heart Rate
+
+4. Describe your data (create a data dictionary): 4 Points
+
+    Gender: Gender of the person 
+    
+    Age : Age of the person
+    
+    Occupation : Occupation of the person.
+    
+    Sleep Duration : No of hours person sleeps per day.
+    
+    Quality of Sleep (scale: 1-10): Rating of the quality of sleep.
+    
+    Physical Activity Level : No of min person engages in physical activity daily.
+    
+    Stress Level (scale: 1-10) : Rating of the stress level experienced
+    
+    BMI Category : The BMI (i.e Underweight, Normal, Overweight).
+    
+    Blood Pressure (systolic/diastolic) : BP measurement of the person 
+    
+    Heart Rate (bpm) : The resting heart rate of the person
+    
+    Daily Steps : No of steps the person takes per day.
+    
+    Sleep Disorder : Presence or absence of a sleep disorder (None, Insomnia, Sleep Apnea).
+    
