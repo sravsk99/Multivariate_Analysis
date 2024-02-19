@@ -1,0 +1,41 @@
+---
+title: "SRAVYA_MVA_HW2"
+output: html_document
+date: "2024-02-18"
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(ggplot2)
+sleep <- read_csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv")
+str(sleep)
+```
+
+
+```{r cars}
+boxplot(sleep[,3:6])
+```
+
+Sleep Duration shows more variability and an outlier indicating significantly lower sleep duration for at least one subject. Both Quality of Sleep and Stress Level demonstrate low variability among subjects, with Quality of Sleep showing a very compact range of values indicating consistency in the responses.
+
+```{r}
+stars(sleep,labels = sleep$`Stress Level`)
+```
+
+Each axis of a star plot represents a different independent variable of the data. The position of each point or line along an axis indicates the value of the corresponding variable
+
+
+```{r}
+#contigency table
+contigency_table <- table(sleep$`BMI Category`, sleep$`Daily Steps`)
+print(contigency_table)
+```
+
+Contigency table summarizes the frequency of observations falling into each category. Useful for exploring the relationship between categorical values. Here we see that people who are normal weight have taken more steps in the 5000-8000 range whereas obese people dont have much daily step count.
+
+```{r}
+#bar plot for the dependent variable
+barplot(table(sleep$), main = "Bar Plot of Dependent Variable")
+```
+
+
