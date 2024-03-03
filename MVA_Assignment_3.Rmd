@@ -5,26 +5,167 @@ date: "2024-02-25"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+sleep <- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv")
+x <- dist(scale(sleep[, c("Age", "Sleep.Duration", "Quality.of.Sleep", "Physical.Activity.Level", "Stress.Level", "Heart.Rate", "Daily.Steps")], center = FALSE))
+as.dist(round(as.matrix(x), 2)[1:12, 1:12])
+x <- sleep[, c("Age", "Sleep.Duration", "Quality.of.Sleep", "Physical.Activity.Level", "Stress.Level", "Heart.Rate", "Daily.Steps")]
+x
 ```
 
-## R Markdown
+We are first scaling the data so that it does not dominate the distance calculations then we are finding euclidean distance to see the similarity/dissimilarity between the variables. It is also useful for tasks such as clustering, classification, and similarity analysis.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-Dataset
-summary(cars)
+```{r}
+cm <- colMeans(x)
+S <- cov(x)
+d <- apply(x, MARGIN = 1, function(x)t(x - cm) %*% solve(S) %*% (x - cm))
+d
+S
+cm
 ```
 
-## Including Plots
+Here we are finding means of each column in our sleep dataset and also the covariance matrix, which represents the pairwise covariances between the columns of the dataset. 
 
-You can also embed plots, for example:
+```{r}
+qqnorm(sleep[,"Age"], main = "Age")
+qqline(sleep[,"Age"])
+qqnorm(sleep[,"Sleep.Duration"], main = "Sleep.Duration")
+qqline(sleep["Sleep.Duration"])
+qqnorm(sleep[,"Quality.of.Sleep"], main = "Quality.of.Sleep")
+qqline(sleep[,"Quality.of.Sleep"])
+qqnorm(sleep[,"Physical.Activity.Level"], main ="Physical.Activity.Level")
+qqline(sleep[,"Physical.Activity.Level"])
+qqnorm(sleep[,"Stress.Level"], main = "Stress.Level")
+qqline(sleep[,"Stress.Level"])
+qqnorm(sleep[,"Heart.Rate"], main = "Heart.Rate")
+qqline(sleep[,"Heart.Rate"])
+qqnorm(sleep[,"Daily.Steps"], main = "Daily.Steps")
+qqline(sleep[,"Daily.Steps"])
+```
+
+This helps us compare the distribution for each independent column in our dataset.
+We can see that the Physical Activity column is making an S shape so we can say that is it skewd which means points are not normally distributed. Similarly, for Sleep Duration, it looks a little skewd.
+Daily Steps seem to have most points closely follow the diagonal line which means they are normally distributed. 
+
+```{r}
+with(data=sleep,t.test(Age[BMI.Category=="Obese"],Age[BMI.Category=="Normal"],var.equal=TRUE))
+with(data=sleep,t.test(Sleep.Duration[BMI.Category=="Obese"],Sleep.Duration[BMI.Category=="Normal"],var.equal=TRUE))
+with(data=sleep,t.test(Quality.of.Sleep[BMI.Category=="Obese"],Quality.of.Sleep[BMI.Category=="Normal"],var.equal=TRUE))
+with(data=sleep,t.test(Physical.Activity.Level[BMI.Category=="Obese"],Physical.Activity.Level[BMI.Category=="Normal"],var.equal=TRUE))
+with(data=sleep,t.test(Stress.Level[BMI.Category=="Obese"],Stress.Level[BMI.Category=="Normal"],var.equal=TRUE))
+with(data=sleep,t.test(Heart.Rate[BMI.Category=="Obese"],Heart.Rate[BMI.Category=="Normal"],var.equal=TRUE))
+with(data=sleep,t.test(Daily.Steps[BMI.Category=="Obese"],Daily.Steps[BMI.Category=="Normal"],var.equal=TRUE))
+
+```
+
+We are doing two sample t-test here to compare independent groups or populations. For eg, comparing means, hypothesis testing, EDA etc. Here we are comparing each column against the 2 values of BMI Category column to see if they differ from each other in any way. We can perform this for all the species. 
+
+The p-value is extremely small for Sleep Duration, Quality of Sleep,  Stress Level, Daily Steps indicating strong evidence for the null hypothesis thus, we accept the null hypothesis and conclude that these qualities make the difference between a normal weighted person and an obese person.
+
+
+```{r}
+if (!require(Hotelling)) install.packages("Hotelling")
+if (!require(corpcor)) install.packages("corpcor")
+library(Hotelling)
+t2testsleep <- hotelling.test(Age + Sleep.Duration + Quality.of.Sleep + Physical.Activity.Level + Stress.Level + Heart.Rate + Daily.Steps ~ BMI.Category, data=sleep)
+cat("T2 statistic=", t2testsleep$stat[[1]], "\n")
+print(t2testsleep)
+
+```
+
+Hotelling T2 test is a multivariate extension of two sample t-test. Here, we are comparing the multivariate means of the variables Age , Sleep.Duration, Quality.of.Sleep ,Physical.Activity.Level , Stress.Level ,  Heart.Rate ,Daily.Steps between different BMI Categories.
+The p-value is small, which means it indicates strong evidence to the null hypothesis.
+The large test statistic indicates a substantial separation between the groups in the multivariate space.
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+attach(sleep)
+var.test(Age[BMI.Category == "Obese"],Age[BMI.Category == "Normal"])
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+We are performing F-test here. The p-value of 0.2253 is not that much greater than the significance level, i.e 0.05 indicating weak evidence for the null hypothesis.Therefore, we accept the null hypothesis. This suggests that there is some difference in the variances of the "Age" variable between the Normal and Obese BMI Category.
+
+```{r pressure, echo=FALSE}
+print(unique(sleep$BMI.Category))
+matstand <- scale(sleep[,c(2,3,4,5,6,9,10)])
+matstand
+matnormal <- matstand[BMI.Category == "Normal",]
+matnormal
+matoverweight <- matstand[BMI.Category == "Overweight",]
+matoverweight
+matobese <- matstand[BMI.Category == "Obese",]
+matobese
+```
+
+We are creating subsets of the standardized data (matstand) for each BMI Category
+Each subset contains only the rows corresponding to a specific species, obtained using conditional indexing based on the BMI Category column.
+
+```{r pressure, echo=FALSE}
+vecmediannormal <- apply(matnormal, 2 , median)
+vecmediannormal
+vecmedianoverweight <- apply(matoverweight, 2 , median)
+vecmedianoverweight
+vecmedianobese <- apply(matobese, 2 , median)
+vecmedianobese
+```
+
+Now we are calculating the median values for each variable (column) in the standardized data matrices for each BMI Category
+
+
+```{r pressure, echo=FALSE}
+matabsdevnormal <- abs(matnormal - matrix(rep(vecmediannormal,nrow(matnormal)),nrow=nrow(matnormal), byrow=TRUE))
+matabsdevnormal
+matabsdevobese <- abs(matobese - matrix(rep(vecmedianobese,nrow(matobese)),nrow=nrow(matobese), byrow=TRUE))
+matobese
+matabsoverweight <- abs(matoverweight - matrix(rep(vecmedianoverweight,nrow(matoverweight)),nrow=nrow(matoverweight), byrow=TRUE))
+matabsoverweight
+```
+
+Here we are calculating the absolute deviations of the standardized data matrices for each BMI Category from their respective median vectors.
+
+```{r pressure, echo=FALSE}
+matabsdev.all <- rbind(matabsdevnormal, matabsdevobese, matabsoverweight)
+matabsdevs.all <- data.frame("BMI Category", matabsdevs.all)
+```
+
+
+Now we are combining the matrices of absolute deviations (matabsdevnormal, matabsdevobese, matabsoverweight), etc.) for each BMI Category into a single data frame and then adding a column for the BMI Category labels.
+
+
+```{r pressure, echo=FALSE}
+matstand
+matstand.all
+colnames(matstand.all) <- colnames(sleep)[c(7, 2, 3, 4, 5, 6, 9, 10)]
+t2testsleep <- hotelling.test(Age + Sleep.Duration + Quality.of.Sleep + Physical.Activity.Level + Stress.Level + Heart.Rate + Daily.Steps ~ BMI.Category, data=matstand.all)
+```
+
+Here, the hotelling function is applied to the standardized data (matstand.all) with a formula specifying all the measurements. The high test statistic of 63 and a very low p-value suggests that there are significant differences between the mean vectors across different BMI Catgeories. 
+
+```{r pressure, echo=FALSE}
+ d.all <- data.frame("BMI Category",sqrt(rowSums(matabsdev.all[,-1]^2)))
+d.all
+colnames(d.all)[2] <- "dij"
+d.all
+head(d.all)
+with(d.all, t.test(dij[BMI.Category=="Normal"], dij[BMI.Category=="Obese"],var.equal=TRUE, alternative="less"))
+sprintf("d-values for Normal: Mean = %2.3f, Variance = %2.3f",mean(d.all$dij[BMI.Category=="Normal"]),var(d.all$dij[BMI.Category=="Normal"]))
+ sprintf("d-values for Obese: Mean = %2.3f, Variance = %2.3f",mean(d.all$dij[BMI.Category=="Obese"]),var(d.all$dij[BMI.Category=="Obese"]))
+```
+
+Above code calculates Euclidean distances based on the absolute deviations (matabsdev.all) of standardized  measurements. The p-value (0.9355) is greater than the significance level thus suggesting weak evidence against the null hypothesis.
+We get the d values for Normal and Obese , which is their mean and variance.
+```{r pressure, echo=FALSE}
+install.packages("car")
+library(car)
+leveneTest(Age ~ BMI.Category, data=sleep)
+leveneTest(Sleep.Duration ~ BMI.Category, data=sleep)
+leveneTest(Quality.of.Sleep ~ BMI.Category, data=sleep)
+leveneTest(Physical.Activity.Level ~ BMI.Category, data=sleep)
+leveneTest(Heart.Rate ~ BMI.Category, data=sleep)
+leveneTest(Daily.Steps ~ BMI.Category, data=sleep)
+```
+
+This code checks if the variability (spread) of factors like age, sleep quality, heart rate is similar or different for different BMI Categories. Here, the test statistic is the F value, and a larger F value suggests larger differences in variances between groups.
+
+The significance codes (***, **, *) show the level of significance at which we can reject the null hypothesis. In this case, *** indicates a very high level of significance.
+
+In each test, the p-value is either small or large which means some factors affect the null hypothesis and some don't.
