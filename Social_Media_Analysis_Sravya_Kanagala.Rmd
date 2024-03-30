@@ -1,0 +1,47 @@
+---
+title: "Social_Media_Analysis_Sravya_Kanagala"
+output: html_document
+date: "2024-03-28"
+---
+
+```{r}
+# Load required library
+library(stats)
+library(readr)
+library(stats)
+
+```
+
+```{r}
+social_media_cleaned_up<- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/social_media_cleaned.csv")
+
+social_media_number <- social_media_cleaned_up[, -1]
+social_media_scaled <- scale(social_media_number)
+```
+
+#### **Questions aimed to be answered with the analysis**
+
+###### *Perform PCA (20 points), Cluster Analysis (20 Points), and Factor Analysis (20 points) on your data*
+
+###### *Summarize what each of these models is telling you about yourself and the class (30 points)*
+
+###### *Provide a takeaway from the analysis (10 points)*
+
+
+### **Performing different methods**
+#### **Principal Component Analysis**
+
+```{r cars}
+pca_result <- prcomp(social_media_scaled, scale. = TRUE)
+summary(pca_result)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
