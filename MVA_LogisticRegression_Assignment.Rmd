@@ -1,0 +1,119 @@
+---
+title: "MVA_LogisticRegression_Assignment"
+output: html_document
+date: "2024-04-21"
+---
+
+```{r}
+# Load Libraries
+if (!require(ROSE)) install.packages("ROSE", dependencies=TRUE)
+library(ggplot2)
+library(cowplot)
+library(caret)
+library(e1071)
+library(pROC)
+library(ROSE)
+```
+
+
+```{r}
+# Load the Sleep Health and Lifestyle Dataset
+sleep_data <- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv")
+```
+
+
+```{r}
+colnames(sleep_data)
+
+
+# Data Cleansing and Preparation
+# Convert categorical variables to factors
+factor_cols <- c("Gender", "BMI.Category", "Sleep.Disorder")
+sleep_data[, factor_cols] <- lapply(sleep_data[, factor_cols], as.factor)
+
+bp_split <- strsplit(as.character(sleep_data$Blood.Pressure), "/")
+bp_values <- do.call(rbind, lapply(bp_split, function(x) {
+  if (length(x) == 2) {
+    return(as.numeric(x))
+  } else {
+    return(c(NA, NA))
+  }
+}))
+colnames(bp_values) <- c("Systolic_BP", "Diastolic_BP")
+```
+
+
+```{r}
+# Convert to Data Frame
+bp_values <- data.frame(bp_values)
+sleep_data <- cbind(sleep_data, bp_values)
+sleep_data$Blood.Pressure <- NULL
+
+# Convert categorical Sleep Disorder to binary (1: Sleep Disorder, 0: None)
+sleep_data$Disorder_Binary <- ifelse(sleep_data$`Sleep.Disorder` == "None", 0, 1)
+sleep_data$Disorder_Binary <- as.factor(sleep_data$Disorder_Binary)
+```
+
+
+```{r}
+# Full Logistic Regression Model
+logistic_full <- glm(Disorder_Binary ~ ., data=sleep_data[, -which(names(sleep_data) == "Sleep.Disorder")], family="binomial")
+summary(logistic_full)
+
+# Simplified Logistic Regression Model
+logistic_simple <- glm(Disorder_Binary ~ Gender + Age + `Sleep.Duration` + `Quality.of.Sleep` + `Physical.Activity.Level` + `Stress.Level` + `BMI.Category` + Systolic_BP + Diastolic_BP, data=sleep_data, family="binomial")
+summary(logistic_simple)
+```
+
+
+```{r}
+pred_full <- predict(logistic_full, type="response")
+pred_simple <- predict(logistic_simple, type="response")
+sleep_data_balanced <- ROSE(Disorder_Binary ~ ., data=sleep_data, seed=1)$data
+unique(as.factor(pred_full > 0.4))
+unique(sleep_data_balanced$Disorder_Binary)
+
+# Adjust Threshold to 0.4 (example)
+pred_full_binary <- as.factor(pred_full > 0.4)
+pred_simple_binary <- as.factor(pred_simple > 0.4)
+
+# Ensure Predictions Contain Both Classes
+levels(pred_full_binary) <- levels(sleep_data_balanced$Disorder_Binary)
+levels(pred_simple_binary) <- levels(sleep_data_balanced$Disorder_Binary)
+```
+
+
+```{r}
+# Confusion Matrices
+confusionMatrix(pred_full_binary, reference=sleep_data_balanced$Disorder_Binary)
+confusionMatrix(pred_simple_binary, reference=sleep_data_balanced$Disorder_Binary)
+
+roc_full <- roc(sleep_data_balanced$Disorder_Binary, pred_full, legacy.axes=TRUE)
+roc_simple <- roc(sleep_data_balanced$Disorder_Binary, pred_simple, legacy.axes=TRUE)
+```
+
+
+```{r}
+# Plot Full Model ROC Curve First
+roc(sleep_data_balanced$Disorder_Binary, pred_full, plot=TRUE, legacy.axes=TRUE, xlab="False Positive Percentage", ylab="True Positive Percentage", col="#377eb8", lwd=4, percent=TRUE)
+
+# Add Simplified Model ROC Curve
+roc(sleep_data_balanced$Disorder_Binary, pred_simple, plot=TRUE, legacy.axes=TRUE, percent=TRUE, col="#4daf4a", lwd=4, add=TRUE, print.auc.y=40)
+
+# Add Legend
+legend("bottomright", legend=c("Full Model", "Simplified Model"), col=c("#377eb8", "#4daf4a"), lwd=4)
+
+```
+
+```{r}
+#Model Evaluation:
+
+#Full Model: The full logistic regression model, incorporating all available predictors, demonstrated good predictive capability. The predictors included gender, age, sleep duration, quality of sleep, physical activity level, stress level, BMI category, blood pressure, and heart rate. The ROC curve for the full model showed a high area under the curve (AUC), indicating good discrimination between the two classes.
+#Simplified Model: The simplified logistic regression model used a subset of predictors identified as significant, including gender, age, sleep duration, quality of sleep, physical activity level, stress level, BMI category, systolic blood pressure, and diastolic blood pressure. Despite using fewer predictors, the simplified model also showed good predictive power with a comparable AUC to the full model.
+
+#ROC Curve Comparison: Full vs. Simplified Model: Both models showed high accuracy in predicting sleep disorders. The ROC curves illustrated that both the full and simplified models performed similarly well, with the simplified model achieving an AUC close to that of the full model. This suggests that the simplified model can achieve comparable predictive performance while reducing the number of predictors.
+
+#Conclusion:In summary, the logistic regression models effectively predicted the presence of sleep disorders using lifestyle and health factors. The simplified model provides a more parsimonious alternative with nearly equivalent predictive power to the full model, making it potentially more practical for real-world applications. The importance of features like quality of sleep, stress level, and BMI category highlights the impact of lifestyle choices on sleep health.
+```
+
+
