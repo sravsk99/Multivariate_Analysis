@@ -1,0 +1,130 @@
+---
+title: "MVA_LDA_ASSIGNMENT"
+output: html_document
+date: "2024-04-28"
+---
+
+```{r}
+# Load Required Libraries
+library(MASS)
+library(ggplot2)
+library(dplyr)
+library(caret)
+library(pROC)
+
+# Load and Inspect Dataset
+sleep_data <- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv", header = TRUE)
+```
+
+
+```{r}
+# Rename Columns
+colnames(sleep_data) <- c('Gender', 'Age', 'Sleep_Duration', 'Quality_of_Sleep',
+                          'Physical_Activity_Level', 'Stress_Level', 'BMI_Category','Blood_Pressure', 'Heart_Rate', 'Daily_Steps', 'Sleep_Disorder')
+```
+
+
+```{r}
+
+
+# Convert Categorical Columns to Factors
+sleep_data$Gender <- factor(sleep_data$Gender)
+sleep_data$BMI_Category <- factor(sleep_data$BMI_Category)
+```
+
+
+```{r}
+sleep_data$Sleep_Disorder <- factor(sleep_data$Sleep_Disorder)
+
+# Select Relevant Features and Target Variable
+lda_data <- sleep_data %>%
+  select(Sleep_Disorder, Gender, Age, Sleep_Duration, Quality_of_Sleep,
+         Physical_Activity_Level, Stress_Level, Heart_Rate, Daily_Steps)
+
+# Remove Rows with Missing Values
+lda_data <- na.omit(lda_data)
+```
+
+
+```{r}
+# Split Data into Training and Test Sets
+set.seed(123)  # Set seed for reproducibility
+train_index <- createDataPartition(lda_data$Sleep_Disorder, p = 0.7, list = FALSE)
+train_data <- lda_data[train_index, ]
+test_data <- lda_data[-train_index, ]
+```
+
+
+```{r}
+# Build and Train the LDA Model
+lda_model <- lda(Sleep_Disorder ~ ., data = train_data)
+
+# Predict on the Test Set
+test_predictions <- predict(lda_model, test_data)
+test_data$lda_prediction <- test_predictions$class
+test_data$lda_posterior <- as.data.frame(test_predictions$posterior)
+```
+
+
+```{r}
+# Generate Confusion Matrix for the Test Set
+confusion_matrix <- table(Predicted = test_data$lda_prediction, Actual = test_data$Sleep_Disorder)
+print(confusion_matrix)
+
+```
+
+
+```{r}
+# Prepare Data for ROC Analysis
+roc_data <- test_data %>%
+  mutate(Insomnia = ifelse(Sleep_Disorder == "Insomnia", 1, 0),
+         `Sleep Apnea` = ifelse(Sleep_Disorder == "Sleep Apnea", 1, 0),
+         None = ifelse(Sleep_Disorder == "None", 1, 0))
+
+# Plot AUC-ROC Curves for Each Class (excluding Narcolepsy)
+roc_insomnia <- roc(roc_data$Insomnia, roc_data$lda_posterior$Insomnia, levels = c(0, 1), direction = "<")
+roc_sleep_apnea <- roc(roc_data$`Sleep Apnea`, roc_data$lda_posterior$`Sleep Apnea`, levels = c(0, 1), direction = "<")
+roc_none <- roc(roc_data$None, roc_data$lda_posterior$None, levels = c(0, 1), direction = "<")
+
+# Initialize the ROC plot
+plot(roc_insomnia, col = "blue", main = "AUC-ROC Curves (Test Set)")
+plot(roc_sleep_apnea, add = TRUE, col = "red")
+plot(roc_none, add = TRUE, col = "purple")
+
+# Add legend
+legend("bottomright", legend = c("Insomnia", "Sleep Apnea", "None"),
+       col = c("blue", "red", "purple"), lwd = 2)
+```
+
+
+```{r}
+# Residual Analysis Function
+compute_residuals <- function(actual, predicted) {
+  return(as.numeric(actual != predicted))
+}
+
+# Apply Residual Analysis
+test_data$residuals <- compute_residuals(test_data$Sleep_Disorder, test_data$lda_prediction)
+
+# Visualize Residuals
+ggplot(data = test_data, aes(x = lda_prediction, fill = as.factor(residuals))) +
+  geom_bar(position = "dodge") +
+  labs(title = "Residual Analysis: Predictions vs Actual (Test Set)", fill = "Residuals") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "red"), labels = c("Correct", "Incorrect"))
+```
+
+```{r}
+#Answers
+#Model Development : In the initial stage of model development, the focus is on preparing the dataset and constructing the Linear Discriminant Analysis (LDA) model. Firstly, the Sleep and Health dataset is loaded, and its structure is examined to gain insights into the features and their types. Subsequently, the dataset undergoes preparation where predictors, excluding the target variable 'Sleep Disorder,' are selected. The categorical variables are converted into factors, while rows with missing values are removed. The dataset is then split into training and test sets using a 70-30 ratio for training and testing, respectively. Finally, the LDA model is fitted to the training data using the lda() function from the MASS package. This function identifies differences between groups to determine the optimal combination of predictors for effectively distinguishing them, forming the cornerstone of model development.
+
+#Model Acceptance: Accepting a model usually entails assessing it against predetermined effectiveness standards. In this process, the model is directly applied for predictions, and its acceptance can be deduced from performance metrics like accuracy. Additionally, examining the summary of the LDA model would offer insights into coefficients and explained variance, aiding in comprehending the model's ability to distinguish between classes, although this step is not explicitly performed in the script but is recommended.
+
+#Residual Analysis: Residual analysis in classification refers to examining the errors made by the model. This involves predicting outcomes with the model, comparing them to the actual data, and scrutinizing the discrepancies (residuals) to identify potential patterns overlooked by the model. This process is typically conducted using the predict() function in scripts, applying the model to test data to generate predictions for analysis.
+
+#Prediction: Forecasting entails utilizing the model to forecast outcomes on fresh data, as explicitly detailed in the script: Through the employment of the predict() function, forecasts are generated on the test dataset, with the script verifying the presence of discriminant scores (pred$x). Should these scores be present, they are employed for visualization purposes, aiding in the assessment of the model's efficacy in distinguishing between the classes.
+
+#Model accuracy: serves as a direct measure of its efficacy, determined through a calculation process. By comparing the predicted outcomes with the actual labels from the test dataset, this procedure quantifies the model's performance, providing a clear and objective metric for evaluating its effectiveness.
+
+#Examining the confusion matrix offers valuable insights into error types, crucial for interpreting clinical data. Similarly, employing cross-validation enhances the model evaluation's robustness by testing performance across various dataset subsets.
+```
+
