@@ -1,0 +1,78 @@
+---
+title: "MVA_MultipleRegression_Assignment"
+output: html_document
+date: "2024-05-14"
+---
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(GGally)
+library(car)
+library(MASS)
+
+# Load the new dataset
+sleep_data <- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv")
+
+# Convert categorical columns to factors
+sleep_data$Gender <- as.factor(sleep_data$Gender)
+sleep_data$BMI.Category <- as.factor(sleep_data$BMI.Category)
+sleep_data$Sleep.Disorder <- as.factor(sleep_data$Sleep.Disorder)
+
+# Perform multiple regression
+fit <- lm(Quality.of.Sleep ~ Age + Sleep.Duration + Physical.Activity.Level + Stress.Level + Heart.Rate + Daily.Steps + Gender + BMI.Category + Sleep.Disorder, data = sleep_data)
+
+# Display the model summary
+summary(fit)
+
+# Pair plot without Blood Pressure
+ggpairs(data = subset(sleep_data, select = -Blood.Pressure), title = "Sleep Health and Lifestyle Data")
+
+# Confidence intervals, fitted values, residuals
+confint(fit, level = 0.95)
+fitted(fit)
+residuals(fit)
+
+# ANOVA table
+anova(fit)
+
+# Variance-covariance matrix
+vcov(fit)
+cov2cor(vcov(fit))
+
+# Influence measures
+influence.measures(fit)
+
+# Regression diagnostic plots
+plot(fit)
+
+# Assessing outliers
+outlierTest(fit)
+leveragePlots(fit)
+
+# Added variable plots
+avPlots(fit)
+
+# Cook's D plot
+cutoff <- 4 / (nrow(sleep_data) - length(fit$coefficients) - 2)
+plot(fit, which = 4, cook.levels = cutoff)
+
+# Influence plot
+influencePlot(fit, id.method = "identify", main = "Influence Plot", sub = "Circle size is proportional to Cook's Distance")
+
+# Normality of residuals
+qqPlot(fit, main = "QQ Plot")
+
+# Distribution of studentized residuals
+sresid <- studres(fit)
+hist(sresid, freq = FALSE, main = "Distribution of Studentized Residuals")
+xfit <- seq(min(sresid), max(sresid), length = 40)
+yfit <- dnorm(xfit)
+lines(xfit, yfit)
+
+# Non-constant error variance
+ncvTest(fit)
+spreadLevelPlot(fit)
+
+```
+
