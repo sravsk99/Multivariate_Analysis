@@ -1,0 +1,79 @@
+---
+title: "MVA_FactorAnalysis_Assignment"
+output: html_document
+date: "2024-03-20"
+---
+
+
+```{r}
+# Load required libraries
+library(psych)
+library(ggplot2)
+library(GGally)
+library(dplyr)
+
+# Load the dataset
+sleep_data <- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv")
+
+# Convert categorical columns to factors using dplyr::mutate
+sleep_data <- sleep_data %>%
+  mutate(Gender = as.factor(Gender),
+         `BMI Category` = as.factor(`BMI.Category`),
+         `Sleep Disorder` = as.factor(`Sleep.Disorder`))
+
+
+# Perform Exploratory Factor Analysis (EFA)
+# Retain only relevant numeric columns
+efa_data <- subset(sleep_data, select = c('Age', 'Sleep.Duration', 'Quality.of.Sleep', 'Physical.Activity.Level', 'Stress.Level', 'Heart.Rate', 'Daily.Steps'))
+
+# Perform Principal Component Analysis (PCA)
+fit.pc <- principal(efa_data, nfactors = 4, rotate = "varimax")
+fit.pc
+round(fit.pc$values, 3)
+fit.pc$loadings
+
+# Loadings with more digits
+for (i in c(1, 3, 2, 4)) {
+  print(fit.pc$loadings[[1, i]])
+}
+fit.pc$communality
+fit.pc$scores
+
+# Further Factor Analysis
+fit.pc$Structure
+fit.pc$Phi
+
+# Factor Analysis Utilities
+fa.parallel(efa_data)
+fa.plot(fit.pc)
+fa.diagram(fit.pc)
+vss(efa_data)
+
+# Correlation Matrix and PCA
+corrm_sleep <- cor(efa_data)
+corrm_sleep
+plot(corrm_sleep)
+
+sleep_pca <- prcomp(efa_data, scale = TRUE)
+summary(sleep_pca)
+plot(sleep_pca)
+
+# Eigenvalues and Variance Explained
+eigen_sleep <- round(sleep_pca$sdev^2, 3)
+names(eigen_sleep) <- paste("PC", 1:7, sep = "")
+eigen_sleep
+sumlambdas <- sum(eigen_sleep)
+propvar <- round(eigen_sleep / sumlambdas, 2)
+cumvar_sleep <- cumsum(propvar)
+
+matlambdas <- rbind(eigen_sleep, propvar, cumvar_sleep)
+rownames(matlambdas) <- c("Eigenvalues", "Prop. variance", "Cum. prop. variance")
+matlambdas
+```
+```{r}
+
+#In this exploratory factor analysis (EFA) and principal component analysis (PCA) of the Sleep Health dataset, we aimed to uncover the underlying structure and relationships among sleep and lifestyle variables. We first converted relevant categorical columns (e.g., Gender, BMI Category, and Sleep Disorder) to factors, then conducted EFA on numerical variables like Age, Sleep Duration, and Physical Activity Level. Four factors were identified using the principal function, which were rotated using varimax for better interpretability. 
+
+#The factor loadings revealed significant contributions from variables like Age, Sleep Duration, and Stress Level. Additionally, PCA was performed to confirm the factor structure and visualize variance explained via scree plots. The parallel analysis and cumulative variance provided insights into the optimal number of factors/components to retain. Overall, this analysis highlighted important predictors and relationships in sleep health, paving the way for a deeper understanding of how lifestyle factors impact sleep quality.
+```
+
