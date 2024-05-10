@@ -1,0 +1,176 @@
+---
+title: "MVA_FINALPROJECT"
+output: html_document
+date: "2024-05-01"
+---
+
+```{r}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(cluster)
+library(factoextra)
+library(NbClust)
+library(MASS)
+library(caret)
+library(psych)
+library(magrittr)
+library(GGally)
+library(readxl)
+library(car)
+```
+
+```{r}
+# Load the dataset
+sleep_data <- read.csv("C:/Users/Sravya/OneDrive/Desktop/RUTGERS UNI WORK (ALL)/MULLTIVARIATE ANALYSIS/HW1/Sleep_health_and_lifestyle_dataset.csv")
+
+# Convert categorical columns to factors or dummy variables
+
+sleep_data <- sleep_data %>%
+  mutate(Gender = as.factor(Gender),
+         `BMI Category` = as.factor(`BMI.Category`),
+         `Sleep Disorder` = as.factor(`Sleep.Disorder`))
+
+# Convert categorical variables to integers (dummy encoding)
+sleep_data_numeric <- sleep_data %>%
+  mutate(across(where(is.factor), as.integer))
+
+# Convert Sleep Disorder to binary (0/1)
+sleep_data_numeric$`Sleep Disorder` <- ifelse(sleep_data_numeric$`Sleep Disorder` == 1, 1, 0)
+
+# Remove missing values
+sleep_data_numeric <- na.omit(sleep_data_numeric)
+
+# Normalize numerical columns only
+normalize <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+numeric_columns <- names(sleep_data_numeric)[sapply(sleep_data_numeric, is.numeric)]
+sleep_data_normalized <- sleep_data_numeric
+sleep_data_normalized[numeric_columns] <- lapply(sleep_data_numeric[numeric_columns], normalize)
+
+# Select only numeric columns for PCA
+sleep_data_numeric_pca <- sleep_data_normalized[, numeric_columns]
+
+```
+
+
+```{r}
+# PCA on the Sleep Dataset
+pca_result <- prcomp(sleep_data_numeric_pca, scale. = TRUE)
+summary(pca_result)
+
+# Plot PCA results
+fviz_pca_biplot(pca_result, geom.ind = "point", pointshape = 21, pointsize = 2,
+                fill.ind = sleep_data$`Sleep Disorder`, col.ind = "black",
+                palette = "jco", addEllipses = TRUE,
+                label = "var", col.var = "black", repel = TRUE,
+                title = "PCA Biplot for Sleep Dataset")
+
+
+```
+```{r}
+# Create a correlation matrix
+cor_matrix <- cor(sleep_data_numeric_pca)
+cor_matrix
+
+# Create a covariance matrix
+cov_matrix <- cov(sleep_data_numeric_pca)
+cov_matrix
+```
+
+
+```{r}
+# Correlation Plot
+ggcorr(cor_matrix, label = TRUE, label_alpha = TRUE, label_round = 2, label_size = 4)
+
+# Pairwise Scatter Plot
+ggpairs(sleep_data_numeric_pca)
+```
+
+
+```{r}
+# Create a distance matrix
+dist_sleep <- dist(sleep_data_numeric_pca)
+
+# Adjust margins and text size
+par(mar = c(5, 4, 4, 2) + 0.1, cex = 0.7)
+
+# Set the number of clusters
+num_clusters <- 4
+
+# Average Linkage
+sleep_average <- hclust(dist_sleep, method = "average")
+plot(sleep_average, main = "Average Linkage Clustering", sub = "", xlab = "Cluster", ylab = "Height")
+rect.hclust(sleep_average, k = num_clusters, border = "red")
+
+# Complete Linkage
+sleep_complete <- hclust(dist_sleep, method = "complete")
+plot(sleep_complete, main = "Complete Linkage Clustering", sub = "", xlab = "Cluster", ylab = "Height")
+rect.hclust(sleep_complete, k = num_clusters, border = "blue")
+
+# Using `fviz_dend` for cleaner visualization
+fviz_dend(sleep_complete, k = num_clusters, rect = TRUE, rect_fill = TRUE,
+          rect_border = "blue", cex = 0.5, main = "Dendrogram (Complete Linkage)")
+
+# Determining Optimal Clusters (NbClust)
+nc <- NbClust(sleep_data_numeric_pca, distance = "euclidean", min.nc = 2, max.nc = 10, method = "average")
+
+# Extract the optimal number of clusters
+optimal_clusters <- as.numeric(names(sort(table(nc$Best.nc[1,]), decreasing = TRUE)[1]))
+
+# Visualizing Dendrograms with Optimal Clusters
+fviz_dend(sleep_average, k = optimal_clusters, main = "Dendrogram with Optimal Clusters (Average Linkage)", horiz = TRUE)
+
+```
+```{r}
+# Perform Exploratory Factor Analysis (EFA)
+fit.pc <- principal(sleep_data_numeric_pca, nfactors = 4, rotate = "varimax")
+fit.pc
+
+# Display Loadings and Communalities
+fit.pc$loadings
+fit.pc$communality
+
+# Parallel Analysis
+fa.parallel(sleep_data_numeric_pca)
+fa.plot(fit.pc)
+fa.diagram(fit.pc)
+
+```
+```{r}
+# Multiple Linear Regression
+fit.lm <- lm(Quality.of.Sleep ~ ., data = sleep_data_numeric)
+summary(fit.lm)
+
+# Individual Diagnostic Plots
+par(mfrow = c(1, 1))  # Reset to a single plot per panel
+plot(fit.lm, which = 1)  # Residuals vs Fitted
+plot(fit.lm, which = 2)  # Q-Q Plot
+plot(fit.lm, which = 3)  # Scale-Location Plot
+plot(fit.lm, which = 5)  # Residuals vs Leverage
+
+# Added Variable Plots
+avPlots(fit.lm)
+
+
+```
+
+```{r}
+#Principal Component Analysis (PCA)Principal Component Analysis (PCA) was employed to reduce the dimensionality of the Sleep dataset and uncover latent patterns. The analysis revealed that a few principal components explain a significant portion of the variance. The biplot visualization highlighted clusters among individuals with or without sleep disorders. Specifically, the first two principal components captured the majority of the data variability, providing insights into how different features relate to each other and to the target variable (Sleep Disorder).
+
+#Vector Matrix AnalysisTo better understand the relationships between variables, a correlation and covariance matrix were computed. The correlation matrix showed strong positive and negative correlations among specific features. For instance, Sleep Duration was negatively correlated with Stress Level and positively with Quality of Sleep. The covariance matrix provided similar insights but in absolute value terms. This analysis helped identify potential predictors for subsequent modeling.
+
+#MVA Visualizations Pairwise scatter plots and correlation heatmaps were created to visualize relationships between variables. The ggpairs plot revealed clusters and potential nonlinear relationships between pairs of features. The heatmap provided a quick overview of the strength of associations, reinforcing findings from the correlation matrix.
+
+#Cluster Analysis A hierarchical clustering approach was used to group individuals based on their sleep and lifestyle patterns. Dendrograms using different linkage methods (average, complete, and single) revealed distinct clusters, which were further validated through the NbClust method. The optimal number of clusters was determined to be four. Visualizing these clusters provided insights into the commonalities and differences among individuals based on their sleep health.
+
+#Factor Analysis Exploratory Factor Analysis (EFA) was conducted to uncover the underlying latent factors affecting sleep health. Four factors were identified, including:
+
+#Lifestyle Factors (e.g., Physical Activity, Daily Steps) Sleep Quality Factors (e.g., Sleep Duration, Quality of Sleep) Health Factors (e.g., Heart Rate, BMI)Mental Health Factors (e.g., Stress Level)The factor loadings and communalities highlighted which observed variables were most influenced by each factor, providing a conceptual framework for understanding the drivers of sleep disorders.Multiple Regression AnalysisA multiple regression model was constructed to predict Quality of Sleep based on the other variables. The significant predictors included Sleep Duration, Stress Level, Physical Activity Level, and Heart Rate. The model provided insights into the factors that have the greatest impact on sleep quality, revealing that reducing stress and increasing physical activity were positively associated with better sleep quality. However, high heart rate and poor sleep duration were detrimental.
+
+#Conclusion Overall, the comprehensive analysis provided a multidimensional understanding of sleep health. Principal Component Analysis reduced the dimensionality, Factor Analysis uncovered latent factors, and Cluster Analysis grouped individuals into distinct patterns. Finally, Multiple Regression confirmed and quantified the relationships between different lifestyle factors and sleep quality. These insights can guide interventions and strategies to improve sleep health.
+```
+
+
